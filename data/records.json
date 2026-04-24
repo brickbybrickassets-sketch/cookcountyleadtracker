@@ -1,11 +1,17 @@
 {
-  "fetched_at": "2026-04-24T18:44:30.687694Z",
-  "source": "Cook County Recorder of Deeds",
+  "fetched_at": "2026-04-24T19:27:17.917371Z",
+  "source": "Cook County Clerk's Office \u2014 Recordings",
   "date_range": {
     "from": "04/17/2026",
     "to": "04/24/2026"
   },
   "total": 0,
   "with_address": 0,
+  "needs_enrichment": 0,
+  "score_breakdown": {
+    "hot": 0,
+    "warm": 0,
+    "cold": 0
+  },
   "records": []
 }
