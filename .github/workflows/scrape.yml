@@ -2,7 +2,6 @@ name: Cook County Lead Scraper
 
 on:
   schedule:
-    # Run daily at 7:00 AM UTC
     - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
@@ -18,12 +17,12 @@ permissions:
 
 concurrency:
   group: "scrape"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   scrape:
     runs-on: ubuntu-22.04
-    timeout-minutes: 60
+    timeout-minutes: 15
 
     env:
       LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '7' }}
@@ -33,42 +32,25 @@ jobs:
       HEADLESS: "true"
 
     steps:
-      # ── Checkout ─────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # ── Python setup ──────────────────────────────────────────────────────────
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: scraper/requirements.txt
 
-      # ── Install dependencies ──────────────────────────────────────────────────
       - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml dbfread playwright
+        run: pip install requests beautifulsoup4 lxml dbfread
 
-      # ── Install Playwright browsers ──────────────────────────────────────────
-      - name: Install Playwright Chromium
-        run: python -m playwright install --with-deps chromium
-
-      # ── Create output directories ─────────────────────────────────────────────
       - name: Prepare output directories
-        run: |
-          mkdir -p dashboard data
+        run: mkdir -p dashboard data
 
-      # ── Run scraper ───────────────────────────────────────────────────────────
       - name: Run lead scraper
         run: python scraper/fetch.py
-        continue-on-error: false
+        timeout-minutes: 10
 
-      # ── Upload artifacts ──────────────────────────────────────────────────────
-      - name: Upload scrape artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -79,29 +61,19 @@ jobs:
             dashboard/records.json
           retention-days: 30
 
-      # ── Commit updated JSON ───────────────────────────────────────────────────
       - name: Commit and push records
         run: |
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
           git add dashboard/records.json data/records.json data/ghl_export.csv || true
-
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
-            TOTAL=$(python -c "
-          import json, pathlib
-          p = pathlib.Path('data/records.json')
-          d = json.loads(p.read_text()) if p.exists() else {}
-          print(d.get('total', 0))
-          ")
-            git commit -m "🏠 Leads update: ${TOTAL} records — ${TIMESTAMP}"
+            git commit -m "Leads update — ${TIMESTAMP}"
             git push
           fi
 
-  # ── Deploy dashboard to GitHub Pages ─────────────────────────────────────────
   deploy-pages:
     needs: scrape
     runs-on: ubuntu-22.04
@@ -116,7 +88,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
