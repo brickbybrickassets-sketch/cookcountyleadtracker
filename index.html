@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cook County Motivated Seller Leads</title>
+<style>
+  :root {
+    --bg:      #0f1117;
+    --surface: #1a1d27;
+    --border:  #2a2e3f;
+    --accent:  #4f8ef7;
+    --green:   #22c55e;
+    --yellow:  #f59e0b;
+    --red:     #ef4444;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header .meta { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  .toolbar { padding: 16px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .toolbar input, .toolbar select { background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 7px 12px; font-size: 13px; outline: none; }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--accent); }
+  .toolbar .spacer { flex: 1; }
+  .btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .btn:hover { opacity: .85; }
+  .btn.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+
+  .stats { display: flex; gap: 16px; padding: 16px 24px; flex-wrap: wrap; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; min-width: 130px; }
+  .stat .val { font-size: 24px; font-weight: 700; }
+  .stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .table-wrap { overflow-x: auto; padding: 0 24px 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 12px; text-align: left; color: var(--muted); font-weight: 600; white-space: nowrap; position: sticky; top: 0; cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .score { display: inline-block; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 12px; }
+  .score.high  { background: rgba(34,197,94,.15);  color: var(--green); }
+  .score.mid   { background: rgba(245,158,11,.15); color: var(--yellow); }
+  .score.low   { background: rgba(239,68,68,.12);  color: var(--red); }
+
+  .flag { display: inline-block; background: rgba(79,142,247,.1); color: var(--accent); border: 1px solid rgba(79,142,247,.2); border-radius: 4px; padding: 1px 6px; font-size: 11px; margin: 1px; white-space: nowrap; }
+  .flag.red { background: rgba(239,68,68,.1); color: var(--red); border-color: rgba(239,68,68,.2); }
+  .flag.yellow { background: rgba(245,158,11,.1); color: var(--yellow); border-color: rgba(245,158,11,.2); }
+
+  .doc-type { background: var(--border); border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .amount { font-variant-numeric: tabular-nums; }
+  .empty { text-align: center; padding: 60px; color: var(--muted); }
+
+  .pagination { display: flex; align-items: center; gap: 8px; padding: 16px 24px; }
+  .pagination button { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+  .pagination button:disabled { opacity: .4; cursor: default; }
+  .pagination .info { color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 600px) { .stats { gap: 8px; } .stat { min-width: 100px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <span>🏠</span>
+  <h1>Cook County Motivated Seller Leads</h1>
+  <span class="meta" id="meta">Loading…</span>
+</header>
+
+<div class="toolbar">
+  <input id="search" type="search" placeholder="Search owner, address, doc#…" style="width:220px"/>
+  <select id="filterType">
+    <option value="">All Types</option>
+    <option value="LP">Lis Pendens</option>
+    <option value="NOFC">Notice of Foreclosure</option>
+    <option value="TAXDEED">Tax Deed</option>
+    <option value="JUD">Judgment</option>
+    <option value="LIEN">Lien</option>
+    <option value="PRO">Probate</option>
+    <option value="NOC">Notice of Commencement</option>
+    <option value="RELLP">Release Lis Pendens</option>
+  </select>
+  <select id="filterScore">
+    <option value="0">All Scores</option>
+    <option value="70">Score ≥ 70 (Hot)</option>
+    <option value="50">Score ≥ 50</option>
+    <option value="30">Score ≥ 30</option>
+  </select>
+  <select id="filterFlag">
+    <option value="">All Flags</option>
+    <option value="Lis pendens">Lis Pendens</option>
+    <option value="Pre-foreclosure">Pre-foreclosure</option>
+    <option value="Judgment lien">Judgment Lien</option>
+    <option value="Tax lien">Tax Lien</option>
+    <option value="Mechanic lien">Mechanic Lien</option>
+    <option value="Probate / estate">Probate</option>
+    <option value="LLC / corp owner">LLC / Corp</option>
+    <option value="New this week">New This Week</option>
+  </select>
+  <div class="spacer"></div>
+  <button class="btn secondary" onclick="exportCSV()">⬇ Export CSV</button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="val" id="statTotal">—</div><div class="lbl">Total Leads</div></div>
+  <div class="stat"><div class="val" id="statHot">—</div><div class="lbl">Hot (≥70)</div></div>
+  <div class="stat"><div class="val" id="statAddr">—</div><div class="lbl">With Address</div></div>
+  <div class="stat"><div class="val" id="statAmt">—</div><div class="lbl">Avg Debt</div></div>
+</div>
+
+<div class="table-wrap">
+  <table id="leadTable">
+    <thead>
+      <tr>
+        <th onclick="sort('score')">Score ↕</th>
+        <th onclick="sort('filed')">Filed ↕</th>
+        <th onclick="sort('cat_label')">Type ↕</th>
+        <th onclick="sort('owner')">Owner</th>
+        <th>Property Address</th>
+        <th onclick="sort('amount')">Amount ↕</th>
+        <th>Flags</th>
+        <th>Links</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty" id="emptyMsg" style="display:none">No records match your filters.</div>
+</div>
+
+<div class="pagination">
+  <button id="prevBtn" onclick="prevPage()">← Prev</button>
+  <span class="info" id="pageInfo"></span>
+  <button id="nextBtn" onclick="nextPage()">Next →</button>
+</div>
+
+<script>
+let ALL = [], FILTERED = [], sortCol = 'score', sortDir = -1, page = 1;
+const PER_PAGE = 50;
+
+const FLAG_COLORS = {
+  'Lis pendens':      'red',
+  'Pre-foreclosure':  'red',
+  'Judgment lien':    'yellow',
+  'Tax lien':         'red',
+  'Mechanic lien':    'yellow',
+  'Probate / estate': 'yellow',
+  'LLC / corp owner': '',
+  'New this week':    '',
+};
+
+fetch('records.json')
+  .then(r => r.json())
+  .then(data => {
+    ALL = data.records || [];
+    const d = data;
+    document.getElementById('meta').textContent =
+      `Updated: ${d.fetched_at ? new Date(d.fetched_at).toLocaleString() : 'N/A'} · ${d.date_range?.from||''} – ${d.date_range?.to||''}`;
+    document.getElementById('statTotal').textContent = ALL.length.toLocaleString();
+    document.getElementById('statHot').textContent = ALL.filter(r => r.score >= 70).length.toLocaleString();
+    document.getElementById('statAddr').textContent = ALL.filter(r => r.prop_address).length.toLocaleString();
+    const amts = ALL.map(r => r.amount).filter(a => a > 0);
+    document.getElementById('statAmt').textContent = amts.length
+      ? '$' + Math.round(amts.reduce((a,b)=>a+b,0)/amts.length).toLocaleString() : '—';
+    applyFilters();
+  })
+  .catch(() => {
+    document.getElementById('emptyMsg').style.display = '';
+    document.getElementById('meta').textContent = 'Could not load records.json';
+  });
+
+['search','filterType','filterScore','filterFlag'].forEach(id =>
+  document.getElementById(id).addEventListener('input', () => { page = 1; applyFilters(); })
+);
+
+function applyFilters() {
+  const q   = document.getElementById('search').value.toLowerCase();
+  const typ = document.getElementById('filterType').value;
+  const sc  = +document.getElementById('filterScore').value;
+  const fl  = document.getElementById('filterFlag').value;
+
+  FILTERED = ALL.filter(r => {
+    if (q && ![r.owner,r.prop_address,r.doc_num,r.grantee,r.mail_address]
+                .join(' ').toLowerCase().includes(q)) return false;
+    if (typ && r.cat !== typ) return false;
+    if (sc && r.score < sc) return false;
+    if (fl && !(r.flags||[]).includes(fl)) return false;
+    return true;
+  });
+
+  FILTERED.sort((a,b) => sortDir * (
+    typeof a[sortCol] === 'number'
+      ? a[sortCol] - b[sortCol]
+      : String(a[sortCol]||'').localeCompare(String(b[sortCol]||''))
+  ));
+
+  render();
+}
+
+function sort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  applyFilters();
+}
+
+function render() {
+  const start = (page-1)*PER_PAGE, end = start+PER_PAGE;
+  const rows  = FILTERED.slice(start, end);
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('emptyMsg');
+
+  empty.style.display = FILTERED.length ? 'none' : '';
+
+  tbody.innerHTML = rows.map(r => {
+    const sc    = r.score >= 70 ? 'high' : r.score >= 50 ? 'mid' : 'low';
+    const flags = (r.flags||[]).map(f =>
+      `<span class="flag ${FLAG_COLORS[f]||''}">${f}</span>`).join('');
+    const amt   = r.amount > 0 ? '$' + r.amount.toLocaleString() : '—';
+    const addr  = [r.prop_address, r.prop_city, r.prop_zip].filter(Boolean).join(', ') || '—';
+    const links = r.clerk_url
+      ? `<a href="${r.clerk_url}" target="_blank" rel="noopener">View Doc ↗</a>` : '—';
+
+    return `<tr>
+      <td><span class="score ${sc}">${Math.round(r.score)}</span></td>
+      <td>${r.filed||'—'}</td>
+      <td><span class="doc-type">${r.doc_type||''}</span><br><small style="color:var(--muted)">${r.cat_label||''}</small></td>
+      <td><strong>${esc(r.owner||'—')}</strong><br><small style="color:var(--muted)">${esc(r.grantee||'')}</small></td>
+      <td>${esc(addr)}<br><small style="color:var(--muted)">${esc(r.mail_address||'')}</small></td>
+      <td class="amount">${amt}</td>
+      <td>${flags||'—'}</td>
+      <td>${links}</td>
+    </tr>`;
+  }).join('');
+
+  const total = FILTERED.length;
+  document.getElementById('pageInfo').textContent =
+    total ? `${start+1}–${Math.min(end,total)} of ${total.toLocaleString()}` : '0 results';
+  document.getElementById('prevBtn').disabled = page <= 1;
+  document.getElementById('nextBtn').disabled = end >= total;
+}
+
+function prevPage() { if(page>1){ page--; render(); } }
+function nextPage() { if((page*PER_PAGE)<FILTERED.length){ page++; render(); } }
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function exportCSV() {
+  const cols = ['score','filed','cat_label','doc_type','doc_num','owner','grantee',
+                 'prop_address','prop_city','prop_state','prop_zip',
+                 'mail_address','mail_city','mail_state','mail_zip',
+                 'amount','flags','clerk_url'];
+  const hdr  = cols.join(',') + '\n';
+  const rows = FILTERED.map(r =>
+    cols.map(c => {
+      const v = c === 'flags' ? (r.flags||[]).join('; ') : (r[c]??'');
+      return '"' + String(v).replace(/"/g,'""') + '"';
+    }).join(',')
+  ).join('\n');
+  const blob = new Blob([hdr+rows], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cook_leads_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>
