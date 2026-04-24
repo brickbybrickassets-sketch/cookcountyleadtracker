@@ -34,7 +34,7 @@ FUZZY_THRESHOLD = 80
 
 CLERK_BASE  = "https://crs.cookcountyclerkil.gov"
 SEARCH_URL  = f"{CLERK_BASE}/Search/Additional"
-RESULT_URL  = f"{CLERK_BASE}/Search/ResultAddt"
+RESULT_URL  = f"{CLERK_BASE}/Search/ResultAddt?id1=%23collapse3"
 
 # Exact document type names from the portal dropdown
 DOC_TYPE_MAP = {
